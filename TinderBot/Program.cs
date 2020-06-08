@@ -14,13 +14,22 @@ namespace TinderBot
     {
         private static readonly IServiceProvider ServiceProvider;
         public static IConfiguration Configuration { get; private set; }
+        const int SleepingMillisecondsBetweenLiking = 4000, 
+            SleepingMillisecondsBeforeGettingNewPackage = 6000,
+            SleepingMillisecondsBetweenLikingPackages = 60000;
         static async Task Main()
         {
             var token = Configuration["Token"];
             var tinderClient = TinderHttpClient.GetClient(token);
             var logger = ServiceProvider.GetService<ILogger<string>>();
-            await tinderClient.SafelySynchronouslyLikePeoplePackages(3000, 5000, logger);
 
+            await tinderClient.SafelySynchronouslyLikePeoplePackages(SleepingMillisecondsBetweenLiking,
+                SleepingMillisecondsBeforeGettingNewPackage, logger);
+            /*await Task.Run(async () =>
+            {
+
+            });
+            */
         }
 
         static Program()
