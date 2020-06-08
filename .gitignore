@@ -16,6 +16,9 @@
 # Mono auto generated files
 mono_crash.*
 
+#config
+/Tinder/TinderBot/appsettings.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
