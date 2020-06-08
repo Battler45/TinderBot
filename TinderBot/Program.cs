@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Console;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,13 +26,18 @@ namespace TinderBot
             var tinderClient = TinderHttpClient.GetClient(token);
             var logger = ServiceProvider.GetService<ILogger<string>>();
 
-            await tinderClient.SafelySynchronouslyLikePeoplePackages(SleepingMillisecondsBetweenLiking,
-                SleepingMillisecondsBeforeGettingNewPackage, SleepMillisecondsAfterFailedLiking, logger);
-            /*await Task.Run(async () =>
-            {
 
-            });
-            */
+           // ThreadPool.GetMaxThreads(out int workersThreads, out int _);
+
+            var likePackagesTasks = Enumerable.Range(0, 4)
+                .Select(i => 
+                    tinderClient.SafelySynchronouslyLikePeoplePackages(SleepingMillisecondsBetweenLiking,
+                     SleepingMillisecondsBeforeGettingNewPackage, SleepMillisecondsAfterFailedLiking, logger)
+                );
+            await Task.WhenAll(likePackagesTasks);
+            
+
+
         }
 
         static Program()
