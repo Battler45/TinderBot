@@ -17,7 +17,7 @@
 mono_crash.*
 
 #config
-/TinderBot/appsettings.json
+/appsettings.json
 
 # Build results
 [Dd]ebug/
