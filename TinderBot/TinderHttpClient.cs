@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using TinderBot.Models;
 
@@ -80,6 +81,23 @@ namespace TinderBot
             var likes = new List<Like>();
             foreach (var userId in usersIds)
             {
+                var like = await LikeUser(userId);
+                if (like != null)
+                    likes.Add(like);
+            }
+            return likes;
+        }
+
+        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage()
+        {
+            var usersDatas = await GetUserDatas();
+            if (usersDatas == null) return null;
+            var usersIds = usersDatas.Select(ud => ud.user._id);
+
+            var likes = new List<Like>();
+            foreach (var userId in usersIds)
+            {
+                Thread.Sleep(1000);
                 var like = await LikeUser(userId);
                 if (like != null)
                     likes.Add(like);

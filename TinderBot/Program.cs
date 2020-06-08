@@ -18,7 +18,7 @@ namespace TinderBot
             while (true)
             {
                 var watch = Stopwatch.StartNew();
-                var likes = await tinderClient.SynchronouslyLikePeoplePackage();
+                var likes = await tinderClient.SafelySynchronouslyLikePeoplePackage();
                 watch.Stop();
                 if (likes == null || likes.Count == 0)
                 {
