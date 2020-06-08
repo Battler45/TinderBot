@@ -14,9 +14,11 @@ namespace TinderBot
     {
         private static readonly IServiceProvider ServiceProvider;
         public static IConfiguration Configuration { get; private set; }
-        const int SleepingMillisecondsBetweenLiking = 4000, 
-            SleepingMillisecondsBeforeGettingNewPackage = 6000,
-            SleepingMillisecondsBetweenLikingPackages = 60000;
+        const int SleepingMillisecondsBetweenLiking         = 4000
+            , SleepingMillisecondsBeforeGettingNewPackage   = 6000
+            , SleepMillisecondsAfterFailedLiking            = 60000
+          //, SleepingMillisecondsBetweenLikingPackages     = 60000
+            ;
         static async Task Main()
         {
             var token = Configuration["Token"];
@@ -24,7 +26,7 @@ namespace TinderBot
             var logger = ServiceProvider.GetService<ILogger<string>>();
 
             await tinderClient.SafelySynchronouslyLikePeoplePackages(SleepingMillisecondsBetweenLiking,
-                SleepingMillisecondsBeforeGettingNewPackage, logger);
+                SleepingMillisecondsBeforeGettingNewPackage, SleepMillisecondsAfterFailedLiking, logger);
             /*await Task.Run(async () =>
             {
 

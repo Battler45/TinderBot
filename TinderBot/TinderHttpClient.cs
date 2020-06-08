@@ -90,7 +90,7 @@ namespace TinderBot
             return likes;
         }
 
-        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage(List<UserData> userDataPackage, int sleepMillisecondsBetweenLiking, ILogger<string> logger)
+        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage(List<UserData> userDataPackage, int sleepMillisecondsBetweenLiking, int sleepMillisecondsAfterFailedLiking, ILogger<string> logger)
         {
             var usersIds = userDataPackage.Select(ud => ud.user._id);
 
@@ -107,12 +107,13 @@ namespace TinderBot
                 else
                 {
                     logger.LogInformation($"failed to like");
+                    Thread.Sleep(sleepMillisecondsAfterFailedLiking);
                     //return null;
                 }
             }
             return likes;
         }
-        public async Task SafelySynchronouslyLikePeoplePackages(int sleepMillisecondsBetweenLiking, int sleepMillisecondsBeforeGettingNewPackage, ILogger<string> logger)
+        public async Task SafelySynchronouslyLikePeoplePackages(int sleepMillisecondsBetweenLiking, int sleepMillisecondsBeforeGettingNewPackage, int sleepMillisecondsAfterFailedLiking, ILogger<string> logger)
         {
             while (true)
             {
@@ -124,7 +125,7 @@ namespace TinderBot
                 }
 
                 var watch = Stopwatch.StartNew();
-                var likes = await SafelySynchronouslyLikePeoplePackage(userDataPackage, sleepMillisecondsBetweenLiking, logger);
+                var likes = await SafelySynchronouslyLikePeoplePackage(userDataPackage, sleepMillisecondsBetweenLiking, sleepMillisecondsAfterFailedLiking, logger);
                 watch.Stop();
                 if (likes == null || likes.Count == 0)
                 {
