@@ -1,8 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TinderBot
@@ -15,19 +18,8 @@ namespace TinderBot
         {
             var token = Configuration["Token"];
             var tinderClient = TinderHttpClient.GetClient(token);
-            while (true)
-            {
-                var watch = Stopwatch.StartNew();
-                var likes = await tinderClient.SafelySynchronouslyLikePeoplePackage();
-                watch.Stop();
-                if (likes == null || likes.Count == 0)
-                {
-                    Logger.Log($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
-                    return;
-                }   
-                Logger.Log($"likes : {likes.Count}// time: {watch.ElapsedMilliseconds / 1000}s");
-            }
-
+            var logger = ServiceProvider.GetService<ILogger<string>>();
+            await tinderClient.SafelySynchronouslyLikePeoplePackages(3000, 5000, logger);
 
         }
 
@@ -39,6 +31,8 @@ namespace TinderBot
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddOptions();
+            serviceCollection.AddLogging(builder => builder.AddConsole());
+
             //serviceCollection.Configure<T>(Configuration.GetSection(nameof(T)));
 
             ServiceProvider = serviceCollection.BuildServiceProvider();

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -88,7 +90,7 @@ namespace TinderBot
             return likes;
         }
 
-        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage()
+        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage(int sleepMillisecondsBetweenLiking, ILogger<string> logger)
         {
             var usersDatas = await GetUserDatas();
             if (usersDatas == null) return null;
@@ -97,12 +99,34 @@ namespace TinderBot
             var likes = new List<Like>();
             foreach (var userId in usersIds)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(sleepMillisecondsBetweenLiking);
                 var like = await LikeUser(userId);
                 if (like != null)
+                {
                     likes.Add(like);
+                    logger.LogInformation($"liked");
+                }
+                else
+                    logger.LogInformation($"failed to like");
+
             }
             return likes;
+        }
+        public async Task SafelySynchronouslyLikePeoplePackages(int sleepMillisecondsBetweenLiking, int sleepMillisecondsBeforeGettingNewPackage, ILogger<string> logger)
+        {
+            while (true)
+            {
+                var watch = Stopwatch.StartNew();
+                var likes = await SafelySynchronouslyLikePeoplePackage(sleepMillisecondsBetweenLiking, logger);
+                watch.Stop();
+                if (likes == null || likes.Count == 0)
+                {
+                    logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
+                    return;
+                }
+                logger.LogInformation($"likes : {likes.Count}// time: {watch.ElapsedMilliseconds / 1000}s");
+                Thread.Sleep(sleepMillisecondsBeforeGettingNewPackage);
+            }
         }
         public async Task<List<Like>> LikePeoplePackage()
         {
