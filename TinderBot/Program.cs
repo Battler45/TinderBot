@@ -14,8 +14,8 @@ namespace TinderBot
     {
         private static readonly IServiceProvider ServiceProvider;
         public static IConfiguration Configuration { get; private set; }
-        const int SleepingMillisecondsBetweenLiking         = 4000
-            , SleepingMillisecondsBeforeGettingNewPackage   = 6000
+        const int SleepingMillisecondsBetweenLiking         = 1000
+            , SleepingMillisecondsBeforeGettingNewPackage   = 5000
             , SleepMillisecondsAfterFailedLiking            = 60000
           //, SleepingMillisecondsBetweenLikingPackages     = 60000
             ;

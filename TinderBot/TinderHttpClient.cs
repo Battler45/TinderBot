@@ -43,6 +43,11 @@ namespace TinderBot
         private void SetupHttpClientHeadersForAuthorizationByToken(string token)
         {
             HttpClient.DefaultRequestHeaders.Add(TokenHeaderName, token);
+
+
+            //persistent-device-id: 93d19b80-b949-4396-8e5f-86ca68e188ab
+            //HttpClient.DefaultRequestHeaders.Add("persistent-device-id", "93d19b80-b949-4396-8e5f-86ca68e188ab");
+
             //HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(TokenHeaderName, token);
         }
         private void SetupHttpClientHeadersForJSONFormat()
@@ -102,12 +107,13 @@ namespace TinderBot
                 if (like != null)
                 {
                     likes.Add(like);
-                    logger.LogInformation($"liked");
+                    //logger.LogInformation($"liked");
                 }
                 else
                 {
-                    logger.LogInformation($"failed to like");
-                    Thread.Sleep(sleepMillisecondsAfterFailedLiking);
+                    logger.LogWarning($"failed to like");
+                    return likes;
+                    //Thread.Sleep(sleepMillisecondsAfterFailedLiking);
                     //return null;
                 }
             }
