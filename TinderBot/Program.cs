@@ -15,29 +15,22 @@ namespace TinderBot
     {
         private static readonly IServiceProvider ServiceProvider;
         public static IConfiguration Configuration { get; private set; }
+        #region Consts
         const int SleepingMillisecondsBetweenLiking         = 1000
             , SleepingMillisecondsBeforeGettingNewPackage   = 5000
             , SleepMillisecondsAfterFailedLiking            = 60000
-          //, SleepingMillisecondsBetweenLikingPackages     = 60000
             ;
+        #endregion
         static async Task Main()
         {
-            var token = Configuration["Token"];
-            var tinderClient = TinderHttpClient.GetClient(token);
-            var logger = ServiceProvider.GetService<ILogger<string>>();
-
-
-           // ThreadPool.GetMaxThreads(out int workersThreads, out int _);
+            var tinderClient = ServiceProvider.GetService<TinderClient>();
 
             var likePackagesTasks = Enumerable.Range(0, 4)
                 .Select(i => 
                     tinderClient.SafelySynchronouslyLikePeoplePackages(SleepingMillisecondsBetweenLiking,
-                     SleepingMillisecondsBeforeGettingNewPackage, SleepMillisecondsAfterFailedLiking, logger)
+                     SleepingMillisecondsBeforeGettingNewPackage, SleepMillisecondsAfterFailedLiking)
                 );
             await Task.WhenAll(likePackagesTasks);
-            
-
-
         }
 
         static Program()
@@ -50,7 +43,8 @@ namespace TinderBot
             serviceCollection.AddOptions();
             serviceCollection.AddLogging(builder => builder.AddConsole());
 
-            //serviceCollection.Configure<T>(Configuration.GetSection(nameof(T)));
+            serviceCollection
+                .AddHttpClient<TinderClient>();
 
             ServiceProvider = serviceCollection.BuildServiceProvider();
         }

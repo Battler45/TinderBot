@@ -21,7 +21,7 @@ namespace TinderBot
             watch.Stop();
             logger.LogInformation($"{methodName}|| likes : {likesCount}// time: {watch.ElapsedMilliseconds / 1000}s");
         }
-        public static async Task RunLike(TinderHttpClient tinderClient, int maxLikesCount, ILogger<string> logger)
+        public static async Task RunLike(TinderClient tinderClient, int maxLikesCount, ILogger<string> logger)
         {
             await TestLikePeoplePackageAsync(nameof(tinderClient.SynchronouslyLikePeoplePackage), maxLikesCount, tinderClient.SynchronouslyLikePeoplePackage, logger);
             await TestLikePeoplePackageAsync(nameof(tinderClient.LikePeoplePackage), maxLikesCount, tinderClient.LikePeoplePackage, logger);

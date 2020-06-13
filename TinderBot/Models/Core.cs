@@ -19,6 +19,7 @@ namespace TinderBot.Models
     public class Data
     {
         public UserData[] results { get; set; }
+        public int timeout { get; set; }// 1800 000 - 0.5hour
     }
 
     public class UserData

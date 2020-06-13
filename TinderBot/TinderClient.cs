@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,47 +13,35 @@ using TinderBot.Models;
 
 namespace TinderBot
 {
-    class TinderHttpClient
+    class TinderClient
     {
+        #region Urls
         private const string TinderApiUrl = "https://api.gotinder.com/";
         private string GetTinderApiLikeUrl => $"{TinderApiUrl}like";
         private const string TinderApiV2Url = "https://api.gotinder.com/v2/";
         //https://api.gotinder.com/v2/recs/core
         private string GetTinderApiPeopleNearbyListUrl => $"{TinderApiV2Url}recs/core";
 
-        private string token;
-        private static TinderHttpClient client;
-        public static TinderHttpClient GetClient(string token) => client ??= new TinderHttpClient(token);
-        private TinderHttpClient(string token) => this.token = token;
-        private HttpClient _httpClient;
-        private HttpClient HttpClient
+        #endregion
+        #region HttpClient
+        private HttpClient HttpClient { get; set; }
+        private HttpClient SetupHttpClientByDefaultSettings(HttpClient httpClient)
         {
-            get
+            SetupHttpClientHeadersForAuthorizationByToken(httpClient, _token);
+            return httpClient;
+            static void SetupHttpClientHeadersForAuthorizationByToken(HttpClient httpClient, string token)
             {
-                if (_httpClient != null) return _httpClient;
-                _httpClient = new HttpClient()
-                {
-                    //BaseAddress = new Uri(TinderApiV2Url)
-                };
-                SetupHttpClientHeadersForAuthorizationByToken(token);
-                //SetupHttpClientHeadersForJSONFormat();
-                return _httpClient;
+                const string AuthHeaderName = "X-Auth-Token";
+                httpClient.DefaultRequestHeaders.Add(AuthHeaderName, token);
             }
         }
-        const string TokenHeaderName = "X-Auth-Token";
-        private void SetupHttpClientHeadersForAuthorizationByToken(string token)
+        #endregion
+        private readonly string _token;
+        private ILogger<TinderClient> Logger { get; }
+        public TinderClient(IOptions<TinderConfig> options, HttpClient httpClient, ILogger<TinderClient> logger)
         {
-            HttpClient.DefaultRequestHeaders.Add(TokenHeaderName, token);
-
-
-            //persistent-device-id: 93d19b80-b949-4396-8e5f-86ca68e188ab
-            //HttpClient.DefaultRequestHeaders.Add("persistent-device-id", "93d19b80-b949-4396-8e5f-86ca68e188ab");
-
-            //HttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(TokenHeaderName, token);
-        }
-        private void SetupHttpClientHeadersForJSONFormat()
-        {
-            HttpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+            (_token, Logger) = (options.Value.Token, logger);
+            HttpClient = SetupHttpClientByDefaultSettings(httpClient);
         }
 
         public async Task<Like> LikeUser(string userId)
@@ -95,7 +84,7 @@ namespace TinderBot
             return likes;
         }
 
-        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage(List<UserData> userDataPackage, int sleepMillisecondsBetweenLiking, int sleepMillisecondsAfterFailedLiking, ILogger<string> logger)
+        public async Task<List<Like>> SafelySynchronouslyLikePeoplePackage(List<UserData> userDataPackage, int sleepMillisecondsBetweenLiking, int sleepMillisecondsAfterFailedLiking)
         {
             var usersIds = userDataPackage.Select(ud => ud.user._id);
 
@@ -111,7 +100,7 @@ namespace TinderBot
                 }
                 else
                 {
-                    logger.LogWarning($"failed to like");
+                    Logger.LogWarning($"failed to like");
                     return likes;
                     //Thread.Sleep(sleepMillisecondsAfterFailedLiking);
                     //return null;
@@ -119,26 +108,26 @@ namespace TinderBot
             }
             return likes;
         }
-        public async Task SafelySynchronouslyLikePeoplePackages(int sleepMillisecondsBetweenLiking, int sleepMillisecondsBeforeGettingNewPackage, int sleepMillisecondsAfterFailedLiking, ILogger<string> logger)
+        public async Task SafelySynchronouslyLikePeoplePackages(int sleepMillisecondsBetweenLiking, int sleepMillisecondsBeforeGettingNewPackage, int sleepMillisecondsAfterFailedLiking)
         {
             while (true)
             {
                 var userDataPackage = await GetUserDatas();
                 if (userDataPackage == null || userDataPackage.Count == 0)
                 {
-                    logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
+                    Logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
                     return;
                 }
 
                 var watch = Stopwatch.StartNew();
-                var likes = await SafelySynchronouslyLikePeoplePackage(userDataPackage, sleepMillisecondsBetweenLiking, sleepMillisecondsAfterFailedLiking, logger);
+                var likes = await SafelySynchronouslyLikePeoplePackage(userDataPackage, sleepMillisecondsBetweenLiking, sleepMillisecondsAfterFailedLiking);
                 watch.Stop();
                 if (likes == null || likes.Count == 0)
                 {
-                    logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
+                    Logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
                     return;
                 }
-                logger.LogInformation($"likes : {likes.Count}// time: {watch.ElapsedMilliseconds / 1000}s");
+                Logger.LogInformation($"likes : {likes.Count}// time: {watch.ElapsedMilliseconds / 1000}s");
                 Thread.Sleep(sleepMillisecondsBeforeGettingNewPackage);
             }
         }
