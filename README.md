@@ -1,6 +1,6 @@
 # Tinder
 
-Now it's autobot.
+Now it's autoliker.
 
 TODO: send standard answers for standard messages<br/>
 TODO: option to filter users (neural network)<br/>
