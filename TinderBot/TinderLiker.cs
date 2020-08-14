@@ -1,83 +1,42 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TinderBot.Models;
 
 namespace TinderBot
 {
-    public class TinderClient
+    public class TinderLiker
     {
-        #region Urls
-        private const string TinderApiUrl = "https://api.gotinder.com/";
-        private string GetTinderApiLikeUrl => $"{TinderApiUrl}like";
-        private const string TinderApiV2Url = "https://api.gotinder.com/v2/";
-        //https://api.gotinder.com/v2/recs/core
-        private string GetTinderApiPeopleNearbyListUrl => $"{TinderApiV2Url}recs/core";
-
-        #endregion
-        #region HttpClient
-        private HttpClient HttpClient { get; set; }
-        private HttpClient SetupHttpClientByDefaultSettings(HttpClient httpClient)
-        {
-            SetupHttpClientHeadersForAuthorizationByToken(httpClient, _token);
-            return httpClient;
-            static void SetupHttpClientHeadersForAuthorizationByToken(HttpClient httpClient, string token)
-            {
-                const string authHeaderName = "X-Auth-Token";
-                httpClient.DefaultRequestHeaders.Add(authHeaderName, token);
-            }
-        }
-        #endregion
-        private readonly string _token;
+        private TinderClient TinderClient { get; }
         private ILogger<TinderClient> Logger { get; }
-        public TinderClient(IOptions<TinderConfig> options, HttpClient httpClient, ILogger<TinderClient> logger)
+        private IUserFilter UserFilter { get; }
+        public TinderLiker(TinderClient tinderClient, ILogger<TinderClient> logger, IUserFilter userFilter)
         {
-            (_token, Logger) = (options.Value.Token, logger);
-            HttpClient = SetupHttpClientByDefaultSettings(httpClient);
+            (Logger, TinderClient, UserFilter) = (logger, tinderClient, userFilter);
         }
 
-        public async Task<Like> LikeUser(string userId)
+        public async Task<Like> Like(UserData userData)
         {
-            var response = await HttpClient.GetAsync($"{GetTinderApiLikeUrl}/{userId}");
-            var contentStream = await response.Content.ReadAsStreamAsync();
-            //var contentStream = await response.Content.ReadAsStringAsync();
-            Like like = null;
-            try
-            {
-                like = await JsonSerializer.DeserializeAsync<Like>(contentStream); 
-            }
-            catch
-            {
-            }
+            if (!UserFilter.Filter(userData)) return null;
+            var like = await TinderClient.LikeUser(userData.user._id);
             return like;
         }
-        public async Task<List<UserData>> GetUsersData()
-        {
-            //Rootobject
-            var response = await HttpClient.GetAsync(GetTinderApiPeopleNearbyListUrl);
-            var contentStream = await response.Content.ReadAsStreamAsync();
-            var responseObject = await JsonSerializer.DeserializeAsync<Rootobject>(contentStream);
-            var usersData = responseObject?.data?.results?.ToList();
-            return usersData;
-        }
-
 
         public async Task<List<Like>> SynchronouslyLikePeoplePackage()
         {
-            var usersDatas = await GetUsersData();
+            var usersDatas = await TinderClient.GetUsersData();
             if (usersDatas == null) return null;
             var usersIds = usersDatas.Select(ud => ud.user._id);
 
             var likes = new List<Like>();
             foreach (var userId in usersIds)
             {
-                var like = await LikeUser(userId);
+                var like = await TinderClient.LikeUser(userId);
                 if (like != null)
                     likes.Add(like);
             }
@@ -92,19 +51,13 @@ namespace TinderBot
             foreach (var userId in usersIds)
             {
                 Thread.Sleep(sleepMillisecondsBetweenLiking);
-                var like = await LikeUser(userId);
+                var like = await TinderClient.LikeUser(userId);
                 if (like != null)
                 {
                     likes.Add(like);
-                    //logger.LogInformation($"liked");
                 }
                 else
-                {
-                    Logger.LogWarning($"failed to like");
                     return likes;
-                    //Thread.Sleep(sleepMillisecondsAfterFailedLiking);
-                    //return null;
-                }
             }
             return likes;
         }
@@ -112,7 +65,7 @@ namespace TinderBot
         {
             while (true)
             {
-                var userDataPackage = await GetUsersData();
+                var userDataPackage = await TinderClient.GetUsersData();
                 if (userDataPackage == null || userDataPackage.Count == 0)
                 {
                     Logger.LogInformation($"Lol, this location is empty for bot, yo timeout is about 30 minutes");
@@ -133,15 +86,15 @@ namespace TinderBot
         }
         public async Task<List<Like>> LikePeoplePackage(/*int delay*/)
         {
-            var usersData = await GetUsersData();
+            var usersData = await TinderClient.GetUsersData();
             if (usersData == null) return null;
             var usersIds = usersData.Select(ud => ud.user._id);
 
             var likes = new List<Like>();
             foreach (var userId in usersIds)
             {
-                var like = await LikeUser(userId);
-                if (like!= null)
+                var like = await TinderClient.LikeUser(userId);
+                if (like != null)
                     likes.Add(like);
                 //await Task.Delay(delay);
             }
